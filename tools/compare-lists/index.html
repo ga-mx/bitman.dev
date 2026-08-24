@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Compare two lists in your browser: find items only in list 1, only in list 2, their union, and their intersection. Entirely client-side, nothing is sent anywhere.">
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+    <title>Compare Two Lists</title>
+    <link rel="icon" href="data:,">
+    <style>
+        :root {
+            --text-primary: #e8e8e8;
+            --text-secondary: #999;
+            --text-tertiary: #666;
+            --bg-color: #000;
+            --bg-raised: #0d0d0d;
+            --border-color: #262626;
+            --accent: #34d399;
+            --max-width: 960px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --text-primary: #1a1a1a;
+                --text-secondary: #555;
+                --text-tertiary: #888;
+                --bg-color: #fff;
+                --bg-raised: #f7f7f7;
+                --border-color: #e5e5e5;
+                --accent: #059669;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 3rem 1.5rem 4rem;
+            color: var(--text-primary);
+            background-color: var(--bg-color);
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+
+        .eyebrow {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin: 0 0 0.9rem;
+        }
+
+        h1 {
+            font-size: clamp(1.9rem, 5vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0 0 0.5rem;
+        }
+
+        .tagline {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin: 0;
+            max-width: 60ch;
+        }
+
+        fieldset {
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .list-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .list-field .label-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .name-input {
+            font: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 0.2rem 0.4rem;
+            width: 8rem;
+            min-width: 0;
+        }
+
+        .name-input:hover,
+        .name-input:focus-visible {
+            border-color: var(--border-color);
+        }
+
+        .name-input:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        textarea {
+            font: inherit;
+            font-size: 0.9rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            color: var(--text-primary);
+            background-color: var(--bg-raised);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.75rem;
+            resize: vertical;
+            min-height: 200px;
+            width: 100%;
+        }
+
+        textarea:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        textarea[readonly] {
+            color: var(--text-secondary);
+        }
+
+        .options {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .options input[type="checkbox"] {
+            width: 1.05rem;
+            height: 1.05rem;
+            accent-color: var(--accent);
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .clear-button {
+            align-self: flex-start;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 0.45rem 1rem;
+        }
+
+        .clear-button:hover,
+        .clear-button:focus-visible {
+            color: var(--text-primary);
+            border-color: var(--text-tertiary);
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .result-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .result-panel .label-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .result-panel .label-row .name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .copy-button {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.15rem 0.55rem;
+            white-space: nowrap;
+        }
+
+        .copy-button:hover,
+        .copy-button:focus-visible {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .copy-button[data-copied="true"] {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .notes {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        footer {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+        }
+
+        footer a {
+            color: inherit;
+        }
+
+        @media (max-width: 720px) {
+            .inputs,
+            .results {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section>
+            <h2 class="eyebrow">Tools</h2>
+            <h1>Compare Two Lists</h1>
+            <p class="tagline">Paste two lists, one entry per line. Everything is computed in your browser as you type &mdash; nothing is uploaded or stored.</p>
+        </section>
+
+        <section aria-label="Input lists">
+            <div class="inputs">
+                <div class="list-field">
+                    <div class="label-row">
+                        <label for="list1">List</label>
+                        <input type="text" id="name1" class="name-input" value="1" aria-label="Name for list 1" maxlength="40">
+                        <span>(one per line)</span>
+                    </div>
+                    <textarea id="list1" rows="12" spellcheck="false" placeholder="apple&#10;banana&#10;cherry"></textarea>
+                </div>
+                <div class="list-field">
+                    <div class="label-row">
+                        <label for="list2">List</label>
+                        <input type="text" id="name2" class="name-input" value="2" aria-label="Name for list 2" maxlength="40">
+                        <span>(one per line)</span>
+                    </div>
+                    <textarea id="list2" rows="12" spellcheck="false" placeholder="banana&#10;cherry&#10;date"></textarea>
+                </div>
+            </div>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-top:1.25rem;">
+                <label class="options">
+                    <input type="checkbox" id="case-insensitive">
+                    Case insensitive
+                </label>
+                <button type="button" class="clear-button" id="clear-button">Clear lists</button>
+            </div>
+        </section>
+
+        <section aria-label="Comparison results">
+            <div class="results" id="results" aria-live="polite">
+                <div class="result-panel">
+                    <div class="label-row"><span><span class="name" id="label-a"></span> only <span id="count-aOnly"></span></span><button type="button" class="copy-button" data-target="out-aOnly">Copy</button></div>
+                    <textarea id="out-aOnly" rows="10" readonly spellcheck="false"></textarea>
+                </div>
+                <div class="result-panel">
+                    <div class="label-row"><span><span class="name" id="label-a2"></span> and <span class="name" id="label-b2"></span> <span id="count-isect"></span></span><button type="button" class="copy-button" data-target="out-isect">Copy</button></div>
+                    <textarea id="out-isect" rows="10" readonly spellcheck="false"></textarea>
+                </div>
+                <div class="result-panel">
+                    <div class="label-row"><span><span class="name" id="label-b"></span> only <span id="count-bOnly"></span></span><button type="button" class="copy-button" data-target="out-bOnly">Copy</button></div>
+                    <textarea id="out-bOnly" rows="10" readonly spellcheck="false"></textarea>
+                </div>
+                <div class="result-panel" style="grid-column: 1 / -1;">
+                    <div class="label-row"><span><span class="name" id="label-a3"></span> or <span class="name" id="label-b3"></span> (union) <span id="count-union"></span></span><button type="button" class="copy-button" data-target="out-union">Copy</button></div>
+                    <textarea id="out-union" rows="6" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <p class="notes" id="notes"></p>
+        </section>
+
+        <footer>
+            <p>Client-side rewrite of a 2011 list-comparison CGI tool. Original Perl/CGI source archived in <a href="./legacy/" rel="noopener">legacy/</a> for reference. &middot; <a href="/">&larr; bitman.dev</a></p>
+        </footer>
+    </main>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const list1El = document.getElementById("list1");
+            const list2El = document.getElementById("list2");
+            const name1El = document.getElementById("name1");
+            const name2El = document.getElementById("name2");
+            const caseEl = document.getElementById("case-insensitive");
+            const notesEl = document.getElementById("notes");
+            const clearButton = document.getElementById("clear-button");
+
+            const outputs = {
+                aOnly: document.getElementById("out-aOnly"),
+                bOnly: document.getElementById("out-bOnly"),
+                union: document.getElementById("out-union"),
+                isect: document.getElementById("out-isect"),
+            };
+
+            // Parses raw textarea text into an ordered map of
+            // comparison-key -> first-seen display value, dropping
+            // blank lines and duplicate entries.
+            function parseList(text, caseInsensitive) {
+                const map = new Map();
+                for (const rawLine of text.split("\n")) {
+                    const value = rawLine.trim();
+                    if (!value) continue;
+                    const key = caseInsensitive ? value.toLowerCase() : value;
+                    if (!map.has(key)) map.set(key, value);
+                }
+                return map;
+            }
+
+            function sortedValues(map, keys) {
+                return keys.map((key) => map.get(key)).sort((a, b) => a.localeCompare(b));
+            }
+
+            function compareLists(textA, textB, caseInsensitive) {
+                const mapA = parseList(textA, caseInsensitive);
+                const mapB = parseList(textB, caseInsensitive);
+                const keysA = [...mapA.keys()];
+                const keysB = [...mapB.keys()];
+                const keysBSet = new Set(keysB);
+                const keysASet = new Set(keysA);
+
+                const aOnlyKeys = keysA.filter((key) => !keysBSet.has(key));
+                const bOnlyKeys = keysB.filter((key) => !keysASet.has(key));
+                const isectKeys = keysA.filter((key) => keysBSet.has(key));
+                const unionKeys = [...new Set([...keysA, ...keysB])];
+                const unionMap = new Map([...mapB, ...mapA]); // A's casing wins on overlap
+
+                return {
+                    aOnly: sortedValues(mapA, aOnlyKeys),
+                    bOnly: sortedValues(mapB, bOnlyKeys),
+                    isect: sortedValues(mapA, isectKeys),
+                    union: sortedValues(unionMap, unionKeys),
+                };
+            }
+
+            function setResult(key, values) {
+                outputs[key].value = values.join("\n");
+                document.getElementById(`count-${key}`).textContent = `(${values.length})`;
+            }
+
+            function render() {
+                const name1 = name1El.value.trim() || "List 1";
+                const name2 = name2El.value.trim() || "List 2";
+                const caseInsensitive = caseEl.checked;
+
+                for (const el of [document.getElementById("label-a"), document.getElementById("label-a2"), document.getElementById("label-a3")]) {
+                    el.textContent = name1;
+                }
+                for (const el of [document.getElementById("label-b"), document.getElementById("label-b2"), document.getElementById("label-b3")]) {
+                    el.textContent = name2;
+                }
+
+                const result = compareLists(list1El.value, list2El.value, caseInsensitive);
+                setResult("aOnly", result.aOnly);
+                setResult("bOnly", result.bOnly);
+                setResult("isect", result.isect);
+                setResult("union", result.union);
+
+                notesEl.textContent = caseInsensitive
+                    ? "Comparing case-insensitively. Duplicate entries are removed and results are sorted alphabetically."
+                    : "Comparing case-sensitively. Duplicate entries are removed and results are sorted alphabetically.";
+            }
+
+            for (const el of [list1El, list2El, name1El, name2El, caseEl]) {
+                el.addEventListener("input", render);
+            }
+
+            clearButton.addEventListener("click", () => {
+                list1El.value = "";
+                list2El.value = "";
+                render();
+                list1El.focus();
+            });
+
+            const canCopy = Boolean(navigator.clipboard && navigator.clipboard.writeText);
+            for (const button of document.querySelectorAll(".copy-button")) {
+                if (!canCopy) {
+                    button.hidden = true;
+                    continue;
+                }
+                button.addEventListener("click", async () => {
+                    const target = document.getElementById(button.dataset.target);
+                    try {
+                        await navigator.clipboard.writeText(target.value);
+                        button.textContent = "Copied";
+                        button.dataset.copied = "true";
+                        setTimeout(() => {
+                            button.textContent = "Copy";
+                            delete button.dataset.copied;
+                        }, 1200);
+                    } catch {
+                        target.select();
+                    }
+                });
+            }
+
+            render();
+        })();
+    </script>
+</body>
+</html>
